@@ -44,6 +44,7 @@ public class ChatClient extends AbstractClient
     super(host, port); //Call the superclass constructor
     this.clientUI = clientUI;
     openConnection();
+    this.sendToServer("#login "+host);
   }
 
   
@@ -66,17 +67,102 @@ public class ChatClient extends AbstractClient
    */
   public void handleMessageFromClientUI(String message)
   {
-    try
-    {
-      sendToServer(message);
-    }
-    catch(IOException e)
-    {
-      clientUI.display
-        ("Could not send message to server.  Terminating client.");
-      quit();
-    }
+	  if(message.startsWith("#")){
+	      this.handleMessageFromClientConsole(message);}
+	      else{
+	        try{
+	      sendToServer(message);
+	    }
+	    catch(IOException e)
+	    {
+	      clientUI.display
+	        ("Could not send message to server.  Terminating client.");
+	      quit();
+	    }
+	  }
   }
+  private void handleMessageFromClientConsole(String message) {
+	// Auto-generated method stub
+      if (message.startsWith("#")) {
+          String[] parameters = message.split(" ");
+          String command = parameters[0];
+          switch (command) {
+              case "#exit":
+                  quit();
+                  break;
+              case "#logoff":
+                  try {
+                      closeConnection();
+                      sendToServer("#logoff");
+                  } catch (IOException e) {
+                      System.out.println("Cannot logoff!");
+                  }
+                  break;
+              case "#sethost":
+                  if (this.isConnected()) {
+                      System.out.println("Can't set host. Already connected.");
+                  } else {
+                      this.setHost(parameters[1]);
+                      System.out.println("New host is: "+this.getHost());
+                  }
+                  break;
+              case "#setport":
+                  if (this.isConnected()) {
+                      System.out.println("Can't set port. Already connected.");
+                  } else {
+                      this.setPort(Integer.parseInt(parameters[1]));
+                      System.out.println("New host is: "+this.getPort());
+                  }
+                  break;
+              case "#login":
+                  if (this.isConnected()) {
+                      try {
+                          this.openConnection();
+                          System.out.println("Logged in to server !");
+                        } catch (IOException e) {
+                          e.printStackTrace();
+                        }
+                  } else {
+                          System.out.println("Can't log in.");
+                  }
+                  break;
+              case "#gethost":
+                  System.out.println("The host is " + this.getHost());
+                  break;
+              case "#getport":
+                  System.out.println("The port is " + this.getPort());
+                  break;
+              default:
+                  System.out.println("Invalid command: '" + command+ "'");
+                  break;
+          }
+      }else {
+    	  try {
+              sendToServer(message);
+          } catch (IOException e) {
+              clientUI.display
+                      ("Could not send message to server.");
+              quit();
+          }
+      }
+	
+}
+
+
+//Override
+  protected void connectionClosed() {
+	    clientUI.display("The connection has been successfully closed.");
+	  }
+//@Override
+  protected void connectionException(Exception exception) {
+	  this.quit();
+	  System.out.println("The connection to the server: " + getHost()+getPort()+" is closed");
+  }
+  
+  
+  
+  
+
   
   /**
    * This method terminates the client.
