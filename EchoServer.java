@@ -2,7 +2,7 @@
 // "Object Oriented Software Engineering" and is issued under the open-source
 // license found at www.lloseng.com 
 
-
+import java.io.*;
 import ocsf.server.*;
 
 /**
@@ -48,9 +48,102 @@ public class EchoServer extends AbstractServer
   public void handleMessageFromClient
     (Object msg, ConnectionToClient client)
   {
-    System.out.println("Message received: " + msg + " from " + client);
-    this.sendToAllClients(msg);
+	    String k = msg.toString();
+	    if(k.startsWith("#"))
+	    {
+	      String[] m = k.split(" ");
+	      if(m[0].equals("#login") && client.getInfo("loginid") == null)
+	      {
+	        try{
+	          System.out.println("id not available.");
+	          client.close();
+	        }
+	        catch(IOException b){}
+	      }
+	      else if(m[0].equals("#login") && client.getInfo("loginid") != null)
+	      {
+	        client.setInfo("loginid",m[1]); 
+	      }
+	    }
+	    System.out.println("Message received: " + msg + " from " + client);
+	    this.sendToAllClients(client.getInfo("loginid")+"to"+msg);
   }
+  
+  
+  
+  
+  public void handleMessageFromServerConsole(String message)
+  {
+    if (message.startsWith("#")) 
+    {
+      String[] e = message.split(" ");
+      String a = e[0];
+      switch (a)
+      {
+        case "#quit":
+          try
+          {
+            close();
+          }
+          catch(IOException b)
+          {
+            System.out.println("Could not quit the server!");
+          }
+          break;
+        case "#stop":
+          stopListening();
+          break;
+        case "#close":
+          try
+          {
+          close();
+          }
+          catch(IOException b)
+          {
+            System.out.println("Not able to close!");
+          }
+          break;
+        case "#setport":
+          if (!isListening())
+          {
+            this.setPort(Integer.parseInt(e[1]));
+          } 
+          else 
+          {
+            System.out.println("Cannot perform the command since the server is not closed!");
+          }
+          break;
+        case "#start":
+          if (isListening()) 
+          {
+            System.out.println("Cannot perform the command since you are already connected!");
+          } 
+          else 
+          {
+            try 
+            {
+                this.listen();
+            } 
+            catch (IOException b) 
+            {
+                System.out.println("Connection was not made!");
+            }
+          }
+          break;
+        case "#getport":
+          System.out.println("The Port is " + this.getPort());
+          break;
+        default:
+          System.out.println("Invalid input");
+          break;
+      }
+    }
+  }
+  
+  
+  
+  
+  
     
   /**
    * This method overrides the one in the superclass.  Called
@@ -71,6 +164,30 @@ public class EchoServer extends AbstractServer
     System.out.println
       ("Server has stopped listening for connections.");
   }
+  
+  
+  
+  //prints a message when the client is connected
+protected void clientConnected(ConnectionToClient client) 
+{
+  System.out.println(client + "is connected to the server");
+  this.sendToAllClients(client + "is connected to the server");
+}
+//prints a message when the client is disconnected 
+synchronized protected void clientDisconnected(ConnectionToClient client) 
+{
+	String msg=(client + "has disconnected with the server");
+	System.out.println(msg);
+	this.sendToAllClients(msg);
+}
+public void clientException(ConnectionToClient client, Throwable exception) {
+	  String msg = "Client" + client + "is disconnected";
+	  System.out.println(msg);
+	  this.sendToAllClients(msg);
+}
+  
+  
+  
   
   //Class methods ***************************************************
   
